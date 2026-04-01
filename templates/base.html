@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}PushUp Trainer{% endblock %}</title>
+    <!-- Tailwind Play CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- HTMX CDN -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            DEFAULT: '#FF6F00', // Amber/Orange accent
+                            light: '#FFA000',
+                            dark: '#E65100'
+                        },
+                        surface: {
+                           DEFAULT: '#121212', // Dark bg
+                           card: '#1E1E1E'
+                        }
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer base {
+            body { @apply bg-surface text-gray-100 font-sans; }
+        }
+        .text-gradient {
+            @apply bg-clip-text text-transparent bg-gradient-to-r from-brand to-brand-light;
+        }
+        .btn-brand {
+            @apply bg-brand hover:bg-brand-dark text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105;
+        }
+    </style>
+    {% block head %}{% endblock %}
+</head>
+<body class="flex flex-col min-h-screen">
+    <!-- Navbar -->
+    <nav class="bg-surface-card border-b border-gray-800 px-4 py-4 sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto flex justify-between items-center">
+            <a href="/" class="text-2xl font-black text-brand tracking-tighter flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15V18a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V15"/><path d="M7 9l5 5 5-5"/><path d="M12 14V3"/></svg>
+                PUSHUP
+            </a>
+            <div class="flex gap-4">
+                <a href="/history" class="text-sm font-medium hover:text-brand transition-colors">History</a>
+                <a href="/" class="text-sm font-medium hover:text-brand transition-colors">Workout</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-grow container mx-auto px-4 py-8 max-w-4xl">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-center py-6 border-t border-gray-800 text-gray-500 text-sm">
+        &copy; 2024 PushUp Trainer. Train hard, stay fit.
+    </footer>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

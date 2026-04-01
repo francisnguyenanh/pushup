@@ -1,0 +1,416 @@
+{% extends "base.html" %}
+
+{% block title %}Training: {{ config.name }} – PushUp Trainer{% endblock %}
+
+{% block head %}
+<style>
+    /* SVG ring rotated so 0% starts at top */
+    #progress-circle {
+        transform: rotate(-90deg);
+        transform-origin: 50% 50%;
+        transition: stroke-dashoffset 0.08s linear;
+    }
+    /* Pulse wrapper on the SVG container during active rep */
+    .ring-pulse {
+        animation: ring-pulse 1.25s ease-in-out infinite;
+    }
+    @keyframes ring-pulse {
+        0%,100% { transform: scale(1);    opacity: 1; }
+        50%      { transform: scale(1.04); opacity: .85; }
+    }
+    /* Big countdown digits during COUNTDOWN state */
+    #center-display.countdown-num {
+        font-size: 6rem;
+        color: #FF6F00;
+    }
+    /* REST state: big clock digits */
+    #center-display.rest-num {
+        font-size: 5rem;
+        color: #FFA000;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- ─── WORKOUT SCREEN ──────────────────────────────────────────────────────── -->
+<div id="workout-container" class="max-w-md mx-auto text-center space-y-8 py-8">
+
+    <!-- Mode chip -->
+    <p class="text-xs font-bold text-gray-500 uppercase tracking-widest">
+        {{ config.name_ja }} &nbsp;·&nbsp; {{ config.name }}
+        &nbsp;·&nbsp; {{ config.sets }} sets × {{ config.reps_per_set }} reps
+    </p>
+
+    <!-- State label -->
+    <div class="space-y-1 min-h-[4.5rem]">
+        <h2 id="state-label"
+            class="text-5xl font-black italic tracking-tighter uppercase transition-all duration-300">
+            GET READY
+        </h2>
+        <p id="state-sublabel"
+           class="text-sm font-bold uppercase tracking-widest text-gray-500">
+            Press START when ready
+        </p>
+    </div>
+
+    <!-- Progress ring (radius 110, inside 288×288 SVG) -->
+    <div id="ring-wrapper" class="relative w-72 h-72 mx-auto">
+        <svg width="288" height="288" viewBox="0 0 288 288" class="w-full h-full">
+            <!-- track -->
+            <circle cx="144" cy="144" r="110"
+                    fill="none" stroke="#1e1e1e" stroke-width="14"/>
+            <!-- progress arc -->
+            <circle id="progress-circle" cx="144" cy="144" r="110"
+                    fill="none" stroke="#FF6F00" stroke-width="14"
+                    stroke-linecap="round"
+                    stroke-dasharray="691.15" stroke-dashoffset="0"/>
+        </svg>
+
+        <!-- centre text -->
+        <div class="absolute inset-0 flex flex-col items-center justify-center gap-1">
+            <span id="center-display"
+                  class="text-8xl font-black italic tracking-tighter leading-none">
+                –
+            </span>
+            <span id="center-unit"
+                  class="text-xs font-bold text-gray-500 uppercase tracking-widest">
+                SEC
+            </span>
+        </div>
+    </div>
+
+    <!-- Live counters -->
+    <div class="grid grid-cols-3 gap-3">
+        <div class="bg-surface-card rounded-2xl p-4 border border-gray-800">
+            <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Set</p>
+            <p id="set-display" class="text-2xl font-black">1 / {{ config.sets }}</p>
+        </div>
+        <div class="bg-surface-card rounded-2xl p-4 border border-gray-800">
+            <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Rep</p>
+            <p id="rep-display" class="text-2xl font-black">0 / {{ config.reps_per_set }}</p>
+        </div>
+        <div class="bg-surface-card rounded-2xl p-4 border border-gray-800">
+            <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Total</p>
+            <p id="total-display" class="text-2xl font-black text-brand">0</p>
+        </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="flex flex-col gap-3">
+        <button id="start-btn"
+                onclick="startWorkout()"
+                class="btn-brand py-5 text-xl tracking-widest">
+            START WORKOUT
+        </button>
+
+        <div id="active-controls" class="hidden grid grid-cols-2 gap-3">
+            <button id="pause-resume-btn"
+                    onclick="togglePause()"
+                    class="py-4 px-6 rounded-xl font-bold uppercase tracking-widest
+                           bg-white/10 hover:bg-white/20 transition-all">
+                PAUSE
+            </button>
+            <button onclick="abortWorkout()"
+                    class="py-4 px-6 rounded-xl font-bold uppercase tracking-widest
+                           bg-red-900/20 text-red-400 hover:bg-red-900/30
+                           border border-red-900/30 transition-all">
+                ABORT
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ─── SUMMARY SCREEN (hidden until DONE) ───────────────────────────────── -->
+<div id="summary-container"
+     class="hidden max-w-md mx-auto text-center space-y-8 py-10">
+
+    <!-- Icon -->
+    <div class="w-24 h-24 bg-green-500/10 text-green-400 rounded-full
+                flex items-center justify-center mx-auto">
+        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48"
+             viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+            <polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+    </div>
+
+    <div class="space-y-2">
+        <h2 class="text-5xl font-black italic tracking-tighter uppercase">
+            Workout Complete!
+        </h2>
+        <p class="text-gray-400 text-sm uppercase tracking-widest font-bold">
+            Great work — every rep counts 💪
+        </p>
+    </div>
+
+    <div class="grid grid-cols-3 gap-3">
+        <div class="bg-surface-card rounded-2xl p-5 border border-gray-800">
+            <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Sets</p>
+            <p id="summary-sets" class="text-3xl font-black">–</p>
+        </div>
+        <div class="bg-surface-card rounded-2xl p-5 border border-gray-800">
+            <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Reps</p>
+            <p id="summary-reps" class="text-3xl font-black text-brand">–</p>
+        </div>
+        <div class="bg-surface-card rounded-2xl p-5 border border-gray-800">
+            <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Time</p>
+            <p id="summary-duration" class="text-3xl font-black">–<span class="text-sm font-medium text-gray-500">s</span></p>
+        </div>
+    </div>
+
+    <div id="save-status" class="text-sm text-gray-500 italic">Saving session…</div>
+
+    <div class="space-y-3 pt-2">
+        <a href="/" class="btn-brand block py-4 uppercase tracking-widest">
+            Back to Home
+        </a>
+        <a href="/history"
+           class="block py-4 px-6 rounded-xl font-bold uppercase tracking-widest
+                  text-sm text-gray-400 bg-white/5 hover:bg-white/10 transition-colors">
+            View Progress
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/workout.js"></script>
+<script>
+// ── Config injected from Flask ─────────────────────────────────────────────
+const WORKOUT_CONFIG = {{ config | tojson }};
+
+// ── State ──────────────────────────────────────────────────────────────────
+let workout      = null;
+let rafId        = null;   // requestAnimationFrame handle
+let phaseStart   = 0;
+let phaseDurMs   = 0;
+
+// ── SVG Ring setup ─────────────────────────────────────────────────────────
+const circle         = document.getElementById('progress-circle');
+const CIRCUMFERENCE  = 2 * Math.PI * 110;   // r = 110
+circle.style.strokeDasharray = CIRCUMFERENCE;
+setRingProgress(0);   // start empty (no fill before workout begins)
+
+function setRingProgress(percent) {
+    const offset = CIRCUMFERENCE * (1 - Math.max(0, Math.min(1, percent / 100)));
+    circle.style.strokeDashoffset = offset;
+}
+
+// ── Start ──────────────────────────────────────────────────────────────────
+function startWorkout() {
+    document.getElementById('start-btn').classList.add('hidden');
+    document.getElementById('active-controls').classList.remove('hidden');
+
+    workout = new WorkoutController(WORKOUT_CONFIG, {
+
+        onStateChange(state, data) {
+            updateStateUI(state, data);
+        },
+
+        onRepComplete(rep, set, total) {
+            document.getElementById('rep-display').textContent =
+                `${rep} / ${WORKOUT_CONFIG.reps_per_set}`;
+            document.getElementById('total-display').textContent = total;
+            document.getElementById('set-display').textContent =
+                `${set} / ${WORKOUT_CONFIG.sets}`;
+        },
+
+        onSetComplete(setNum, restSec) {
+            // UI update done via onStateChange('REST')
+        },
+
+        onCountdown(value) {
+            document.getElementById('center-display').textContent = value;
+            setRingProgress(((4 - value) / 3) * 100);
+        },
+
+        onRestTick(secLeft) {
+            // Big rest digits
+            document.getElementById('center-display').textContent = secLeft;
+        },
+
+        onDone(totalReps, duration, setsDone) {
+            showSummary(totalReps, duration, setsDone);
+            saveWorkout(totalReps, duration, setsDone);
+        }
+    });
+
+    workout.start();
+}
+
+// ── UI update per state ─────────────────────────────────────────────────────
+function updateStateUI(state, data) {
+    cancelAnimationFrame(rafId);
+
+    const label    = document.getElementById('state-label');
+    const sublabel = document.getElementById('state-sublabel');
+    const center   = document.getElementById('center-display');
+    const unit     = document.getElementById('center-unit');
+    const wrapper  = document.getElementById('ring-wrapper');
+    const pauseBtn = document.getElementById('pause-resume-btn');
+
+    wrapper.classList.remove('ring-pulse');
+    center.classList.remove('countdown-num', 'rest-num');
+
+    switch (state) {
+
+        case 'COUNTDOWN':
+            label.textContent   = 'GET READY';
+            sublabel.textContent = `Set 1 of ${WORKOUT_CONFIG.sets} — prepare!`;
+            center.classList.add('countdown-num');
+            center.textContent  = data.countdown;
+            unit.textContent    = '';
+            // ring shows countdown progress
+            setRingProgress(((4 - data.countdown) / 3) * 100);
+            pauseBtn.textContent = 'PAUSE';
+            break;
+
+        case 'REP_UP':
+            label.textContent   = 'UP ↑';
+            sublabel.textContent = 'Exhale — push hard!';
+            wrapper.classList.add('ring-pulse');
+            unit.textContent    = 'SEC';
+            startAnimatedTimer(data.durationMs);
+            updateSetRep(data);
+            pauseBtn.textContent = 'PAUSE';
+            break;
+
+        case 'REP_DOWN':
+            label.textContent   = 'DOWN ↓';
+            sublabel.textContent = 'Inhale — lower slowly';
+            unit.textContent    = 'SEC';
+            startAnimatedTimer(data.durationMs);
+            updateSetRep(data);
+            pauseBtn.textContent = 'PAUSE';
+            break;
+
+        case 'REST':
+            label.textContent   = 'REST 🔥';
+            sublabel.textContent = `Set ${data.set} done — next set in…`;
+            center.classList.add('rest-num');
+            center.textContent  = Math.round(data.durationMs / 1000);
+            unit.textContent    = 'REST';
+            startAnimatedTimer(data.durationMs);
+            updateSetRep(data);
+            pauseBtn.textContent = 'PAUSE';
+            break;
+
+        case 'DONE':
+            // handled by showSummary()
+            break;
+
+        case 'PAUSED':
+            label.textContent    = 'PAUSED';
+            sublabel.textContent = 'Session is paused';
+            pauseBtn.textContent = 'RESUME';
+            break;
+    }
+
+    // Resume case: restart visual timer with remaining time
+    if (state !== 'PAUSED' && data && data.isResume && data.remainingMs > 0) {
+        startAnimatedTimer(data.remainingMs);
+    }
+}
+
+function updateSetRep(data) {
+    document.getElementById('set-display').textContent =
+        `${data.set} / ${WORKOUT_CONFIG.sets}`;
+    const rep = workout ? workout.currentRep : 0;
+    document.getElementById('rep-display').textContent =
+        `${rep} / ${WORKOUT_CONFIG.reps_per_set}`;
+    document.getElementById('total-display').textContent =
+        workout ? workout.totalReps : 0;
+}
+
+// ── Animated ring timer (requestAnimationFrame loop) ──────────────────────
+function startAnimatedTimer(durationMs) {
+    cancelAnimationFrame(rafId);
+    phaseStart  = Date.now();
+    phaseDurMs  = durationMs;
+    const center = document.getElementById('center-display');
+
+    function tick() {
+        const elapsed   = Date.now() - phaseStart;
+        const remaining = Math.max(0, phaseDurMs - elapsed);
+        const pct       = (remaining / phaseDurMs) * 100;
+
+        setRingProgress(pct);
+
+        // Only show seconds in centre for REP phases; REST uses onRestTick
+        const state = workout ? workout.state : '';
+        if (state === 'REP_UP' || state === 'REP_DOWN') {
+            center.textContent = Math.ceil(remaining / 1000) || 0;
+        }
+
+        if (remaining > 0) {
+            rafId = requestAnimationFrame(tick);
+        } else {
+            setRingProgress(0);
+        }
+    }
+
+    rafId = requestAnimationFrame(tick);
+}
+
+// ── Pause / Resume ─────────────────────────────────────────────────────────
+function togglePause() {
+    if (!workout) return;
+    if (workout.isPaused) {
+        workout.resume();
+    } else {
+        workout.pause();
+        cancelAnimationFrame(rafId);
+    }
+}
+
+// ── Abort ──────────────────────────────────────────────────────────────────
+function abortWorkout() {
+    if (!confirm('Quit this workout? Progress will NOT be saved.')) return;
+    if (workout) workout.abort();
+    window.location.href = '/';
+}
+
+// ── Summary screen ─────────────────────────────────────────────────────────
+function showSummary(totalReps, duration, setsDone) {
+    cancelAnimationFrame(rafId);
+    document.getElementById('workout-container').classList.add('hidden');
+    const sc = document.getElementById('summary-container');
+    sc.classList.remove('hidden');
+
+    document.getElementById('summary-sets').textContent     = setsDone;
+    document.getElementById('summary-reps').textContent     = totalReps;
+    document.getElementById('summary-duration').innerHTML   =
+        `${duration}<span class="text-sm font-medium text-gray-500">s</span>`;
+}
+
+// ── Save session to DB ─────────────────────────────────────────────────────
+async function saveWorkout(totalReps, duration, setsDone) {
+    const statusEl = document.getElementById('save-status');
+    try {
+        const resp = await fetch('/api/session/save', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                mode_id:   WORKOUT_CONFIG.id,
+                sets_done: setsDone,
+                reps_done: totalReps,
+                duration_s: duration,
+                completed: 1
+            })
+        });
+        const json = await resp.json();
+        if (json.ok) {
+            statusEl.textContent = '✅ Session saved!';
+            statusEl.classList.add('text-green-500');
+        } else {
+            throw new Error('non-ok response');
+        }
+    } catch (e) {
+        console.error('Save failed:', e);
+        statusEl.textContent = '⚠️ Could not save session.';
+        statusEl.classList.add('text-red-400');
+    }
+}
+</script>
+{% endblock %}

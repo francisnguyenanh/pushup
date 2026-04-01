@@ -1,0 +1,44 @@
+{
+  "modes": [
+    {
+      "id": "beginner",
+      "name": "Beginner",
+      "name_ja": "初心者",
+      "description": "3 sets × 5 reps, 60s rest",
+      "sets": 3,
+      "reps_per_set": 5,
+      "rest_seconds": 60,
+      "rep_pace_s": 2.5
+    },
+    {
+      "id": "intermediate",
+      "name": "Intermediate",
+      "name_ja": "中級者",
+      "description": "4 sets × 10 reps, 45s rest",
+      "sets": 4,
+      "reps_per_set": 10,
+      "rest_seconds": 45,
+      "rep_pace_s": 3.0
+    },
+    {
+      "id": "advanced",
+      "name": "Advanced",
+      "name_ja": "上級者",
+      "description": "5 sets × 20 reps, 30s rest",
+      "sets": 5,
+      "reps_per_set": 20,
+      "rest_seconds": 30,
+      "rep_pace_s": 3.0
+    },
+    {
+      "id": "custom",
+      "name": "Custom",
+      "name_ja": "カスタム",
+      "description": "User-defined reps/sets/rest",
+      "sets": null,
+      "reps_per_set": null,
+      "rest_seconds": null,
+      "rep_pace_s": null
+    }
+  ]
+}

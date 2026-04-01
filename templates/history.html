@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}Progress History - PushUp Trainer{% endblock %}
+
+{% block content %}
+<div class="space-y-12 animate-in fade-in slide-in-from-bottom duration-500">
+    <!-- Header -->
+    <header class="text-center space-y-4">
+        <h1 class="text-5xl font-black italic tracking-tighter text-gradient uppercase flex flex-col items-center gap-2">
+            DAILY PROGRESS
+            <div class="h-1.5 w-24 bg-brand rounded-full"></div>
+        </h1>
+    </header>
+
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-surface-card rounded-2xl p-6 border border-gray-800 text-center">
+            <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Total Reps</p>
+            <p class="text-4xl font-black text-brand">{{ stats.total_reps }}</p>
+        </div>
+        <div class="bg-surface-card rounded-2xl p-6 border border-gray-800 text-center">
+            <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Sessions</p>
+            <p class="text-4xl font-black text-brand">{{ stats.total_sessions }}</p>
+        </div>
+        <div class="bg-surface-card rounded-2xl p-6 border border-gray-800 text-center">
+            <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Best Day</p>
+            <p class="text-4xl font-black text-brand">{{ stats.best_day_reps }}</p>
+        </div>
+        <div class="bg-surface-card rounded-2xl p-6 border border-gray-800 text-center">
+            <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Streak</p>
+            <p class="text-4xl font-black text-brand">{{ stats.streak }}d</p>
+        </div>
+    </div>
+
+    <!-- Chart Container -->
+    <div class="bg-surface-card rounded-2xl p-6 pb-8 border border-gray-800 shadow-2xl">
+        <h3 class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-6">Performance Chart (Last 30 Days)</h3>
+        <div class="aspect-[16/9] md:aspect-[21/9] w-full">
+            <canvas id="historyChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Recent Sessions -->
+    <div class="space-y-6">
+        <h3 class="text-sm font-bold text-gray-400 uppercase tracking-widest px-1">Session Logs</h3>
+        <div class="overflow-x-auto rounded-2xl border border-gray-800">
+            <table class="w-full text-left bg-surface-card">
+                <thead>
+                    <tr class="bg-white/5 border-b border-gray-800">
+                        <th class="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Date</th>
+                        <th class="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Mode</th>
+                        <th class="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Sets</th>
+                        <th class="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Reps</th>
+                        <th class="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Duration</th>
+                        <th class="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-800">
+                    {% for session in recent %}
+                    <tr class="hover:bg-white/5 transition-colors">
+                        <td class="px-6 py-4 font-bold">{{ session.date }}</td>
+                        <td class="px-6 py-4 uppercase text-xs text-gray-400 tracking-wider">{{ session.mode_id }}</td>
+                        <td class="px-6 py-4">{{ session.sets_done }}</td>
+                        <td class="px-6 py-4 font-black">{{ session.reps_done }}</td>
+                        <td class="px-6 py-4 text-xs">{{ session.duration_s }}s</td>
+                        <td class="px-6 py-4 text-xs">
+                            {% if session.completed %}
+                            <span class="px-2 py-1 bg-green-500/10 text-green-500 font-bold rounded uppercase">Completed</span>
+                            {% else %}
+                            <span class="px-2 py-1 bg-red-500/10 text-red-500 font-bold rounded uppercase">Partial</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% if not recent %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-10 text-center text-gray-500 italic">No workout history recorded yet. Complete your first session to see it here!</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    async function fetchChartData() {
+        const response = await fetch('/api/history');
+        const data = await response.json();
+        renderChart(data);
+    }
+
+    function renderChart(data) {
+        const ctx = document.getElementById('historyChart').getContext('2d');
+        
+        // Define brand colors
+        const brandColor = '#FF6F00';
+        const brandLight = '#FFA000';
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.map(d => d.date),
+                datasets: [{
+                    label: 'Total Daily Reps',
+                    data: data.map(d => d.total_reps),
+                    borderColor: brandColor,
+                    backgroundColor: brandColor + '33', // 20% opacity
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 6,
+                    pointBackgroundColor: brandColor,
+                    pointBorderColor: '#121212',
+                    pointBorderWidth: 2,
+                    pointHoverRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                        ticks: { color: '#666', font: { weight: 'bold' } }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#666', font: { weight: 'bold' } }
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+
+    // Call fetch on load
+    fetchChartData();
+</script>
+{% endblock %}
