@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -19,8 +20,8 @@
                             dark: '#E65100'
                         },
                         surface: {
-                           DEFAULT: '#121212', // Dark bg
-                           card: '#1E1E1E'
+                            DEFAULT: '#121212', // Dark bg
+                            card: '#1E1E1E'
                         }
                     },
                     animation: {
@@ -43,13 +44,19 @@
     </style>
     {% block head %}{% endblock %}
 </head>
+
 <body class="flex flex-col min-h-screen">
     <!-- Navbar -->
     <nav class="bg-surface-card border-b border-gray-800 px-4 py-4 sticky top-0 z-50">
         <div class="max-w-4xl mx-auto flex justify-between items-center">
             <a href="/" class="text-2xl font-black text-brand tracking-tighter flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15V18a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V15"/><path d="M7 9l5 5 5-5"/><path d="M12 14V3"/></svg>
-                PUSHUP
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 15V18a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V15" />
+                    <path d="M7 9l5 5 5-5" />
+                    <path d="M12 14V3" />
+                </svg>
+                TOMO - PUSHUP
             </a>
             <div class="flex gap-4">
                 <a href="/history" class="text-sm font-medium hover:text-brand transition-colors">History</a>
@@ -65,9 +72,10 @@
 
     <!-- Footer -->
     <footer class="text-center py-6 border-t border-gray-800 text-gray-500 text-sm">
-        &copy; 2024 PushUp Trainer. Train hard, stay fit.
+        &copy; 2026 Tomo - Pushup Trainer. Train hard, stay fit.
     </footer>
 
     {% block scripts %}{% endblock %}
 </body>
+
 </html>
